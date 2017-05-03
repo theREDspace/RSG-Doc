@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+  </head>
+  <body>
+    <h1><%= xml_html_content[:componentName] %></h1>
+    <h2>Extends: <%= xml_html_content[:componentExtendedClass] %></h2>
+
+    <% if xml_html_content[:brsfiles].length > 0 %>
+      <h2> Associated Brightscript: </h2>
+      <ul>
+        <% xml_html_content[:brsfiles].each do |brsfile| %>
+          <li><a href="<%= brsfile[:path] %>.html"><%= brsfile[:name] %></a></li>
+        <%end %>
+      </ul>
+    <% end %>
+
+    <% if xml_html_content[:fields].length > 0 %>
+      <h2> Fields: </h2>
+      <ul>
+        <% xml_html_content[:fields].each do |field| %>
+          <li><%= field[:id] %> : <%= field[:type] %></li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <% if xml_html_content[:functionalfields].length > 0 %>
+      <h2> Functional Fields: </h2>
+      <ul>
+        <% xml_html_content[:functionalfields].each do |functionalfield| %>
+          <li><a href="<%= functionalfield[:file] %>"></a><%= functionalfield[:name] %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </body>
+</html>

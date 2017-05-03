@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+  </head>
+  <body>
+    <h1> <%= brs_doc_content[:name] %> </h1>
+    <% if brs_doc_content[:functions].length > 0 %>
+    <h2> Functions: </h2>
+      <% brs_doc_content[:functions].each do |function| %>
+        <% if function[:deprecated] %>
+          <h3>Deprecated: <%= function[:deprecated] %></h3>
+        <% end %>
+        <h3> <%= function[:functionname] %> </h3>
+        <p> <%= function[:description].join(" ") %> </p>
+        <% if function[:params].length > 0 %>
+          <% function[:params].each do |param| %>
+            <h4> <%= param[:name] %> </h4>
+            <p>  <%= param[:description] %></p>
+          <% end %>
+        <% end %>
+        <% if function[:return] %>
+          <h3>Returns: </h3>
+          <p> <%= function[:return] %> </p>
+        <% end %>
+        <% if function[:since] %>
+          <h4>Added in <%= function[:since] %></h4>
+        <% end %>
+      <% end %>
+    <% end %>
+  </body>
+</html>
