@@ -4,5 +4,4 @@
 require "rsg_doc"
 require "byebug"
 
-puts Dir.pwd()
 Docgen.new(root_dir: Dir.pwd()).generate
