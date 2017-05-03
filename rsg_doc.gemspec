@@ -1,5 +1,6 @@
 #********** Copyright 2017 REDspace. All Rights Reserved. **********
-
+lib = File.expand_path('../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'rsg_doc'
 
 Gem::Specification.new do |s|

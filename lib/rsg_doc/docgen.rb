@@ -110,18 +110,18 @@ class Docgen
   # Controls the parsing for the commands
   def parsebrs( script, package, parentxmlfile)
 
-    # Account for the path being relative, versus using package root
-    ref_brs_script = File.join(@ROOT_DIR, package, script)
+    # FUTURE: Account for the path being relative, versus using package root
+    @ref_brs_script = File.join(@ROOT_DIR, package, script)
 
     # html to be written to the documentation
     brs_doc_content = Hash.new
     brs_doc_content[:functions] = Array.new
-    brs_doc_content[:name] = File.basename(ref_brs_script)
+    brs_doc_content[:name] = File.basename(@ref_brs_script)
 
     begin
-      lines = IO.readlines(ref_brs_script)
+      lines = IO.readlines(@ref_brs_script)
     rescue Errno::ENOENT
-      puts "Warn: BrightScript file not found: #{ref_brs_script} Referenced from: #{parentxmlfile}"
+      puts "Warn: BrightScript file not found: #{@ref_brs_script} Referenced from: #{parentxmlfile}"
       return
     else
       # look through the saved lines for comments to parse
@@ -146,13 +146,13 @@ class Docgen
       # Document brightscript file
       brs_doc_loc = File.join(
             @doc_dir,
-            File.dirname(ref_brs_script).split(@ROOT_DIR)[1],
-            File.basename(ref_brs_script)
+            File.dirname(@ref_brs_script).split(@ROOT_DIR)[1],
+            File.basename(@ref_brs_script)
       ) << ".html"
       brs_file = File.open(brs_doc_loc, "w", 0755)
       brs_file.write( template.result(binding) )
       brs_file.close
-      return {:content => brs_doc_content, :file => brs_doc_loc, :ref => ref_brs_script }
+      return {:content => brs_doc_content, :file => brs_doc_loc, :ref => @ref_brs_script }
     end
   end
 
@@ -170,7 +170,12 @@ class Docgen
         break
       end
       full_comment = /('|(?i:rem))\s*(?<comment>\w.*$)/.match(comments[line_num])
-      brs_html_content[:description].push( parseDescription(full_comment['comment'] ))
+      if not full_comment
+        puts "fatal! Bad comment in file #{@ref_brs_script}"
+        abort
+      else
+        brs_html_content[:description].push( parseDescription(full_comment['comment'] ))
+      end
       line_num += 1
     end
     brs_html_content[:params] = Array.new
