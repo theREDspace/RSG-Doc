@@ -10,8 +10,7 @@ Gem::Specification.new do |s|
   s.description   = ""
   s.authors       = ["TyRud"]
   s.email         = 'tyler.rudolph@redspace.com'
-  s.files         = ["lib/rsg_doc.rb", "lib/rsg_doc/docgen.rb", "bin/rsg",
-                      "lib/rsg_doc/docgenTemplates/docgen.brs.html.erb","lib/rsg_doc/docgenTemplates/docgen.xml.html.erb" ]
+  s.files         = `git ls-files -z`.split("\x0")
   s.homepage      = "https://rubygems.org/gems/example"
   s.license       = 'Apache-2.0'
 
