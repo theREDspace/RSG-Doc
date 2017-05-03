@@ -19,7 +19,7 @@ From within the root directory for a project:
 The generator targets Scenegraph xml files and parses Brightscript associated through the use of script tags.
 
     <script type="text/brightscript" uri="pkg:/somebrightscript.brs"></script>'
-A docs folder is created containing same directory structure as the project with .brs.html and .xml.html files located where the source would be.
+A docs folder is created containing the same directory structure as the project with .brs.html and .xml.html files located where the source would be.
 
 For information on how the html files are generated check out the [Standard](#standard).
 
