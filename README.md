@@ -4,6 +4,9 @@
 
 A tool to generate documentation for Brightscript referenced in Scenegraph XML.
 
+### Developed with love by REDspace Inc
+For general inquiries contact Tyler Smith at tyler.smith@redspace.com
+
 ## Installation
 
     $ gem install rsg_doc
