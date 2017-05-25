@@ -2,6 +2,7 @@
 #********** Copyright 2017 REDspace. All Rights Reserved. **********
 
 require "rsg_doc"
-require "byebug"
+#require "byebug"
 
+include RSGDoc
 Docgen.new(root_dir: Dir.pwd()).generate
