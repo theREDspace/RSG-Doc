@@ -13,29 +13,46 @@ module RSGDoc
 
       # For setting up links to roku docs later on
       @BRS_DOC_REF = "https://sdkdocs.roku.com/display/sdkdoc/"
-      FileUtils.cd(@ROOT_DIR)
-      FileUtils.mkdir_p 'docs', :mode => 0755
-      # Grab the document root
+
+
+      # Grab the generated documents root
       @doc_dir = File.join(@ROOT_DIR, "docs")
 
-      # Grab the list of files and directories to be ignored
+      # Grab the list of files/directories to be ignored
       ignoreFile = ".rsgignore"
-
-      File.open(File.join(@ROOT_DIR,ignoreFile)).each do |line|
-        puts(line)
+      @IgnoreRules = Array.new
+      if File.exist? (File.join(@ROOT_DIR, ignoreFile))
+        File.open(File.join(@ROOT_DIR,ignoreFile)).each do |line|
+          @IgnoreRules.push( @ROOT_DIR + "/" + line )
+        end
+      else
+        warn(".rsgignore not found at: " + @ROOT_DIR)
       end
     end
 
     # Generate html files for xml files and brs included via script tags
     def generate
-      Dir.glob(File.join(@ROOT_DIR, "**", "*.xml")).each do |file|
-        FileUtils.mkdir_p File.join(@doc_dir, File.dirname(file).split(@ROOT_DIR)[1]), :mode => 0755
-        parsexml(file)
+      xmlFiles = Dir.glob(File.join(@ROOT_DIR, "**", "*.xml"))
+      if nil != xmlFiles.first()
+        FileUtils.cd(@ROOT_DIR)
+        FileUtils.mkdir_p 'docs', :mode => 0755
+
+        xmlFiles.each do |file|
+          parsexml(file)
+        end
+      else
+        warn("No xml files found")
       end
     end
 
     # Look through the xml file and generate an html file with appropriate information
     def parsexml(filename)
+      # Look for ignore rules on directories and xml filenames
+      if @IgnoreRules.any? { |igrule| File.fnmatch(igrule, filename) }
+        warn("Ignoring .xml file: " + filename)
+        return
+      end
+
       scripts = Array.new
       # Initialize the hash containing xml.html information
       xml_html_content = Hash.new
@@ -45,6 +62,7 @@ module RSGDoc
 
       # Iterate through lines in the file
       File.open(filename).each do |line|
+
         # Look for component name and optionally the extended class
         temp_component = /<component name="(?<name>[^"]*)" (extends="(?<extendedClass>[^"]*)")?.*>/.match(line)
         if (temp_component)
@@ -53,9 +71,10 @@ module RSGDoc
           next
         end
         # Look for referenced brightscript files
-        tempScript = /<script.*uri="pkg:(?<uri>[^"]*)".*>/.match(line)
+        # Files defined using package
+        tempScript = /<script.*uri="(?<uri>[^"]*)".*>/.match(line)
         if (tempScript)
-          scripts.push( tempScript )
+          scripts.push( tempScript['uri'] )
           next
         end
         # Look for fields on the inferface
@@ -77,24 +96,48 @@ module RSGDoc
       # End looping through file
       end
 
+      FileUtils.mkdir_p File.join(@doc_dir, File.dirname(filename).split(@ROOT_DIR)[1]), :mode => 0755
+
       # Define the variable for the portion of the path after the root and before pkg:
-      # Needs to be changed in order to account for relative paths
       packageDoc = nil
 
-      # Parse the brightscript
+      # Parse the brightscript files
       scripts.each do |script|
+        # Determine full path to the file
+        if script.include? "pkg:"
+          scriptParts = script.split(/pkg:\//, 2)
+          script = File.expand_path(scriptParts[1], @ROOT_DIR)
+        else
+          # Exclusively relative
+          script = File.expand_path(script, File.dirname(filename))
+        end
 
-        packageDoc = File.dirname(filename.split(@ROOT_DIR)[1]).split(File.dirname(script['uri']))[0]
+        # Checking for ignore rules on .brs files
+        if @IgnoreRules.any? { |igrule| File.fnmatch(igrule, script) }
+          warn("Ignoring .brs file: " + script)
+          next
+        end
+
+        packageDoc = File.dirname(script.split(@ROOT_DIR)[1])
+
+        # Check if documentation was already produced for a particular file
+        documentationPath = File.join(@doc_dir, packageDoc, File.basename(script))
+
+        if File.exist? documentationPath + ".html"
+          warn(".brs file already documented: "+ documentationPath)
+          next
+        end
+
         xml_html_content[:brsfiles].push({
-          :path => File.join(@doc_dir, packageDoc, File.path(script['uri'])),
-          :name => File.basename(script['uri'])
+          :path => documentationPath,
+          :name => File.basename(script)
         })
 
-        brs_doc_contents = parsebrs( script['uri'], packageDoc, filename )
+        brs_doc_contents = parsebrs( script, packageDoc, filename )
         # Pair up the functional field with the corresponding script
         xml_html_content[:functionalfields].each do |function|
           if brs_doc_contents[:content][:functions].empty?
-            puts "Warn: Uncommented functional field located in #{brs_doc_contents[:ref]}"
+             warn("Uncommented functional field located in #{brs_doc_contents[:ref]}")
           else
             brs_doc_contents[:content][:functions].each do |brsfunction|
               if brsfunction[:functionname] == function[:name]
@@ -118,21 +161,21 @@ module RSGDoc
       xml_file.close
     end
 
-    # Controls the parsing for the commands
+    # Parses the brightscript files
+    # script        - full path to the brightscript file
+    # package       - partial path from the root to the document directory
+    # parentxmlfile - full path to the xml file where the brightscript was referenced
     def parsebrs( script, package, parentxmlfile)
-
-      # FUTURE: Account for the path being relative, versus using package root
-      @ref_brs_script = File.join(@ROOT_DIR, package, script)
 
       # html to be written to the documentation
       brs_doc_content = Hash.new
       brs_doc_content[:functions] = Array.new
-      brs_doc_content[:name] = File.basename(@ref_brs_script)
+      brs_doc_content[:name] = File.basename(script)
 
       begin
-        lines = IO.readlines(@ref_brs_script)
+        lines = IO.readlines(script)
       rescue Errno::ENOENT
-        puts "Warn: BrightScript file not found: #{@ref_brs_script} Referenced from: #{parentxmlfile}"
+        puts "Warn: BrightScript file not found: #{script} Referenced from: #{parentxmlfile}"
         return
       else
         # look through the saved lines for comments to parse
@@ -157,13 +200,13 @@ module RSGDoc
         # Document brightscript file
         brs_doc_loc = File.join(
               @doc_dir,
-              File.dirname(@ref_brs_script).split(@ROOT_DIR)[1],
-              File.basename(@ref_brs_script)
+              File.dirname(script).split(@ROOT_DIR)[1],
+              File.basename(script)
         ) << ".html"
         brs_file = File.open(brs_doc_loc, "w", 0755)
         brs_file.write( template.result(binding) )
         brs_file.close
-        return {:content => brs_doc_content, :file => brs_doc_loc, :ref => @ref_brs_script }
+        return {:content => brs_doc_content, :file => brs_doc_loc, :ref => script }
       end
     end
 
@@ -248,6 +291,10 @@ module RSGDoc
         end
         return des
       end
+    end
+
+    def warn(message)
+      puts "Warning: " + message
     end
 
   # End class

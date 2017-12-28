@@ -1,3 +1,4 @@
 *.gem
+test_rsg
 .byebug_history
 testing/
