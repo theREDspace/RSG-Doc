@@ -1,8 +1,19 @@
 #!/usr/bin/env ruby
 #********** Copyright 2017 REDspace. All Rights Reserved. **********
 
+require "byebug"
+
+require "optparse"
 require "rsg_doc"
-#require "byebug"
+
+options = {}
+OptionParser.new do |opts|
+
+  opts.on("-v", "--verbose", "Run verbosely") do
+    options[:verbose] = true
+  end
+
+end.parse!
 
 include RSGDoc
-Docgen.new(root_dir: Dir.pwd()).generate
+Docgen.new(options: options).generate

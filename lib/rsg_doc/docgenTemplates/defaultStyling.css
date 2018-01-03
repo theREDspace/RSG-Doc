@@ -1,7 +1,73 @@
-*{
-  font-family: Arial, Helvetica, sans-serif
+/* Roku Purple rgb(102, 45, 145)*/
+/* Red rgb(220, 20, 60)  */
+
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  margin: auto;
 }
 
 .title{
+  padding-left: 25px;
+}
 
+/* Section Level Formatting */
+.section-container{
+  background-color: rgb(220, 20, 60);
+  padding-top: 25px;
+  width: 100%;
+}
+
+.section-container:last-of-type{
+  padding-bottom: 25px;
+}
+
+.section-container > .section-title {
+  color: white;
+  margin: 0px 25px 25px 25px;
+}
+
+.section-container > .function-container{
+  margin: 25px 25px 0px 25px;
+}
+
+/* Function documentation Styling */
+.function-container{
+  background-color: white;
+  border: 2px solid rgb(220, 220, 220);
+  border-radius: 5px;
+  margin-top: 25px;
+  padding: 0px 25px 20px 25px;
+}
+
+.function-name{
+  color: rgb(220, 20, 60);
+  font-weight: bolder;
+}
+
+.function-section{
+  background-color: rgb(230, 230, 230);
+  border: 2px solid rgb(200, 200, 200);
+  border-radius: 5px;
+  margin: auto;
+  margin-top: 20px;
+  padding: 0px 10px 0px 10px ;
+}
+
+/* Special styling for xml templates */
+.section-container > .function-section {
+  margin: 0px 25px 0px 25px;
+}
+
+.function-deprecated{
+  background-color:rgb(255, 160, 80);
+  border: 2px solid rgb(255, 140, 46);
+}
+
+.function-parameter{
+  color: rgb(220, 20, 60);
+  font-weight: bolder;
+}
+
+.function-parameter-description{
+  margin-left: 25px
 }

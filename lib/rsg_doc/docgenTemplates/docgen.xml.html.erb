@@ -1,37 +1,45 @@
 <!DOCTYPE html>
 <html>
   <head>
-
+    <link rel="stylesheet" href="<%= stylePath %>" ></link>
   </head>
   <body>
-    <h1><%= xml_html_content[:componentName] %></h1>
-    <h2>Extends: <%= xml_html_content[:componentExtendedClass] %></h2>
+    <h1 class="title"><%= xml_html_content[:componentName] %></h1>
+    <% if xml_html_content[:componentExtendedClass] %>
+      <h2 class="title">Extends: <%= xml_html_content[:componentExtendedClass] %></h2>
+    <% end %>
 
     <% if xml_html_content[:brsfiles].length > 0 %>
-      <h2> Associated Brightscript: </h2>
-      <ul>
-        <% xml_html_content[:brsfiles].each do |brsfile| %>
-          <li><a href="<%= brsfile[:path] %>.html"><%= brsfile[:name] %></a></li>
-        <%end %>
-      </ul>
+      <div class="section-container">
+        <h2 class="section-title">Associated Brightscript</h2>
+        <div class="function-section">
+          <% xml_html_content[:brsfiles].each do |brsfile| %>
+            <h3><a href="<%= brsfile[:path] %>.html"><%= brsfile[:name] %></a></h3>
+          <%end %>
+        </div>
+      </div>
     <% end %>
 
     <% if xml_html_content[:fields].length > 0 %>
-      <h2> Fields: </h2>
-      <ul>
-        <% xml_html_content[:fields].each do |field| %>
-          <li><%= field[:id] %> : <%= field[:type] %></li>
-        <% end %>
-      </ul>
+      <div class="section-container">
+        <h2 class="section-title">Interface Fields</h2>
+        <div class="function-section">
+          <% xml_html_content[:fields].each do |field| %>
+            <h3><%= field[:id] %> : <%= field[:type] %></h3>
+          <% end %>
+        </div>
+      </div>
     <% end %>
 
     <% if xml_html_content[:functionalfields].length > 0 %>
-      <h2> Functional Fields: </h2>
-      <ul>
-        <% xml_html_content[:functionalfields].each do |functionalfield| %>
-          <li><a href="<%= functionalfield[:file] %>"></a><%= functionalfield[:name] %></li>
-        <% end %>
-      </ul>
+      <div class="section-container">
+      <h2 class="section-title">Functional Fields</h2>
+        <div class="function-section">
+          <% xml_html_content[:functionalfields].each do |functionalfield| %>
+            <h3><a href="<%= functionalfield[:file]%>#<%=functionalfield[:name]%>"><%= functionalfield[:name] %></a></h3>
+          <% end %>
+        </div>
+      </div>
     <% end %>
   </body>
 </html>

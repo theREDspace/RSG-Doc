@@ -1,4 +1,5 @@
 *.gem
-test_rsg
+.DS_Store
 .byebug_history
+tsrsg
 testing/
