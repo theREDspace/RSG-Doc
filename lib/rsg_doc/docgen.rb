@@ -29,8 +29,8 @@ module RSGDoc
 
     # Generate html files for xml files and brs included via script tags
     def generate
+      # Find all the xml files
       xmlFiles = Dir.glob(File.join(@ROOT_DIR, "**", "*.xml"))
-
       if nil != xmlFiles.first()
         FileUtils.cd(@ROOT_DIR)
 
@@ -96,7 +96,11 @@ module RSGDoc
 
             while packagePath == ""
               potentialPath = File.join(@ROOT_DIR, tempPathArr.join("/"), scriptExtension)
-              packagePath = tempPathArr.join("/") if File.exist? potentialPath
+
+              if File.exist? potentialPath
+                packagePath = tempPathArr.join("/")
+                break
+              end
               tempPathArr.pop
             end
           end
@@ -138,7 +142,6 @@ module RSGDoc
 
         if @IgnoreRules.any? { |igrule| File.fnmatch(igrule, script) }
           warn("Ignoring .brs file: " + script)
-          puts script
           next
         end
 
@@ -341,6 +344,81 @@ module RSGDoc
 
     def warn(message)
       puts "Warning: " + message if @verbose
+    end
+
+    #
+    # Generates an index.html file with links to all documented files underneath
+    #
+    def generateIndex()
+      docRoot = File.join(Dir.pwd, "docs")
+      docs = Dir.glob(File.join(docRoot, "**", "{*.xml.html,*.brs.html}"))
+
+      # Structured content that will be passed to the template
+      content = Hash.new
+
+      docs.each do |file|
+        # Creates a reference to the starting layer of the structure
+        current = content
+
+        relativeFilePath = file.split(docRoot + "/")[1]
+        relativeFilePath.split("/").each do |section|
+          if section.include? ".html"
+            current["files"] = Array.new if !current["files"]
+            current["files"].push(relativeFilePath)
+
+          else
+            current[section] = Hash.new if !current[section]
+            current = current[section]
+
+          end
+        end
+      end
+
+      # Recursive Logic for generating index file content
+      htmlContent = String.new
+
+      # Generates html for files in a directory
+      parseFiles = lambda do |files|
+        htmlContent << "<ul>"
+        files.each do |file|
+          htmlContent << "<li>"
+          htmlContent << "<a href=#{file}>#{File.basename(file)}</a></li>"
+        end
+        htmlContent << "</ul>"
+      end #parseFiles
+
+      # Generates html for directories
+      parseLayer = lambda do |list|
+        htmlContent << "<div>"
+        list.keys.each do |key|
+          if list[key].class == Hash
+            # Parse subdirectory
+            htmlContent << "<h3>#{key}</h3>"
+            parseLayer.call(list[key])
+          else
+            # Parse files in directory
+            parseFiles.call(list[key])
+          end
+        end
+        htmlContent << "</div>"
+      end #parseLayer
+
+      # Parse the generated documentation
+      parseLayer.call(content)
+
+      puts htmlContent
+
+      # Using the .index.html.erb template to generate documentation
+      template = ERB.new(File.read(File.join(File.dirname(__FILE__), "docgenTemplates", "docgen.index.html.erb")))
+      # Create Index File
+      doc_loc = File.join(docRoot,"index.html")
+
+      # Create the document
+      index_file = File.open(doc_loc, "w", 0755)
+
+      # The binding here is the current context
+      index_file.write( template.result(binding) )
+      index_file.close
     end
 
   # End class

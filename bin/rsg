@@ -13,7 +13,16 @@ OptionParser.new do |opts|
     options[:verbose] = true
   end
 
+  opts.on("-i", "--index", "Generate index") do
+    options[:index] = true
+  end
+
 end.parse!
 
 include RSGDoc
-Docgen.new(options: options).generate
+doc = Docgen.new(options: options)
+if options[:index]
+  doc.generateIndex
+else
+  doc.generate
+end
