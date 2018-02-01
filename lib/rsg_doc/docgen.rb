@@ -214,23 +214,28 @@ module RSGDoc
         return
       else
         # look through the saved lines for comments to parse
-        counter = 0
-        until counter > lines.length
-          if  /^\s*(sub|function)/.match(lines[counter])
-            rev_counter = counter - 1
-            while rev_counter > 0
-              break unless  /\s*('|(?i:rem))/.match(lines[rev_counter])
-              rev_counter -= 1
+        currentLine = 0
+        until currentLine > lines.length
+          if  /^\s*(sub|function)/.match(lines[currentLine])
+            commentStartLine = currentLine - 1
+            while commentStartLine > 0
+              break unless  /\s*('|(?i:rem))/.match(lines[commentStartLine])
+              commentStartLine -= 1
             end
 
-            if counter - rev_counter
-              commentInfo = parseComments(lines.slice(rev_counter+1, counter-rev_counter))
+            if currentLine - commentStartLine
+              commentInfo = parseComments(lines.slice(commentStartLine+1, currentLine-commentStartLine))
               if nil != commentInfo
-                brs_doc_content[:functions].push(commentInfo)
+                # Check for a bad comment
+                if nil != commentInfo[:bad_comment]
+                  warn "Bad Comment in File: #{script} (#{commentStartLine + commentInfo[:line]}) Reason: #{commentInfo[:reason]}"
+                else
+                  brs_doc_content[:functions].push(commentInfo)
+                end
               end
             end
           end
-          counter += 1
+          currentLine += 1
         # End of loop per file
         end
 
@@ -261,72 +266,99 @@ module RSGDoc
 
     # Find all the comment components when generating the brightscript file
     def parseComments(comments)
-      # Last line of the comments will be the function name
-      brs_html_content = Hash.new
-      brs_html_content[:description] = Array.new
-      line_num = 0;
+      functionData = Hash.new
+      functionDescription = Array.new
 
+      currentLine = 0;
       # Parse description block
-      while line_num < comments.length - 1
-        if /('|(?i:rem))\s*$/.match(comments[line_num])
-          line_num += 1
+      while currentLine < comments.length - 1
+        if /('|(?i:rem))\s*$/.match(comments[currentLine])
+          currentLine += 1
           break
         end
-        full_comment = /('|(?i:rem))\s*(?<comment>\w.*$)/.match(comments[line_num])
+
+        full_comment = /('|(?i:rem))\s*(?<comment>\w.*$)/.match(comments[currentLine])
         if not full_comment
-          warn "Bad comment in file #{@ref_brs_script}"
-          return
+          return {:bad_comment => true, :line => currentLine}
         else
-          brs_html_content[:description].push( parseDescription(full_comment['comment'] ))
+          if currentLine == 0
+            functionData[:name] = full_comment['comment']
+          else
+            functionDescription.push( parseDescription(full_comment['comment'] ))
+          end
         end
-        line_num += 1
+        currentLine += 1
       end
-      brs_html_content[:params] = Array.new
+      functionData[:description] = functionDescription
+
+      functionParams = Array.new
       # Parse the block tags if present
-      while line_num < comments.length - 1
+      while currentLine < comments.length - 1
         # Look for deprecated tag
-        dep_match = /'\s*@deprecated\s*(?<description>.*$)/.match(comments[line_num])
+        dep_match = /'\s*@deprecated\s*(?<description>.*$)/.match(comments[currentLine])
         if dep_match
-          brs_html_content[:deprecated] = parseDescription(dep_match['description'])
-          line_num += 1
+          functionData[:deprecated] = parseDescription(dep_match['description'])
+          currentLine += 1
           next
         end
         # Look for param tag
-        param_match = /'\s*@param\s*(?<name>\w*)\s*(?<description>\w.*)?/.match(comments[line_num])
+        param_match = /'\s*@param\s*\{(?<type>\w*[^\}])\s*(?<name>\w*),\s*(?<description>\w.*)/.match(comments[currentLine])
         if param_match
-          brs_html_content[:params].push({
+          functionParams.push({
             :name => param_match['name'],
+            :type => param_match['type'],
             :description => parseDescription(param_match['description'])
           })
-          line_num += 1
+          currentLine += 1
           next
         end
         # Look for since tags
-        since_match = /'\s*@since\s*(?<description>\w.*)/.match(comments[line_num])
+        since_match = /'\s*@since\sversion\s*(?<description>\w.*)/.match(comments[currentLine])
         if since_match
-          brs_html_content[:since] = parseDescription(since_match['description'])
-          line_num += 1
+          functionData[:since] = parseDescription(since_match['description'])
+          currentLine += 1
           next
         end
         # Look for return tags
-        return_match = /'\s*@return\s*(?<description>\w.*$)/.match(comments[line_num])
+        return_match = /'\s*@return\s*(?<type>\{\w*\})\s*,\s*(?<description>\w.*$)/.match(comments[currentLine])
         if return_match
-          brs_html_content[:return] = parseDescription(return_match['description'])
-          line_num += 1
+          functionData[:return] = {
+            :type => return_match["type"],
+            :description => parseDescription(return_match['description'])
+          }
+          currentLine += 1
           next
         end
-        line_num += 1
+
+        # Undecided how to deal with subfield of an associative array
+        currentLine += 1
       end
-      # Get the function details (name for now)
-      function_info = /^\s*(sub|function)\s(?<name>[^(]*)\((?<inputs>[^)]*)\)\s*(?<returntype>\w.*)?/.match(comments[comments.length-1])
+      functionData[:params] = functionParams
+
+      # Validation on the correctness of the comment (Will prevent the comment contents from being corrected)
+      function_info = /^\s*(sub|function)\s(?<name>[^(]*)\((?<inputs>[^)]*)\)/.match(comments[comments.length-1])
       if function_info
-        brs_html_content[:functionname] = function_info['name']
-        brs_html_content[:functioninputs] = function_info['inputs']
+
+        if functionData[:name] != function_info["name"]
+          return {:bad_comment => true, :line => currentLine, :reason => "Function names do not match"}
+        end if
+
+        params = function_info["inputs"].split(/,\s*/)
+        if params.count != functionData[:params].length
+          return {:bad_comment => true, :line => currentLine, :reason => "Number of function parameters do not match"}
+        end if
+
+        params.each do |paramName|
+          if nil == functionData[:params].any? { |param| param[:name] = paramName }
+            return {:bad_comment => true, :line => currentLine, :reason => "Could not match parameter #{paramName}"}
+          end
+        end
+
       end
-      return brs_html_content
+      return functionData
     end
 
-    # Handle the description and the inline tags
+    # Handle the description portion of tag blocks
     def parseDescription(des)
       return des unless inline_match = /^'(.*)(?<inline>{[^}]*})(.*)/.match(des)
 

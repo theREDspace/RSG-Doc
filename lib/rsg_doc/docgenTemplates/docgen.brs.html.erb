@@ -10,7 +10,7 @@
       <h2 class="section-title"> Functions </h2>
         <% brs_doc_content[:functions].each do |function| %>
           <div class="function-container">
-            <h2 class="function-name" name="<%= function[:functionname] %>"> #<%= function[:functionname] %> </h2>
+            <h2 class="function-name" name="<%= function[:name] %>"> #<%= function[:name] %> </h2>
 
             <% if function[:deprecated] %>
               <div class="function-deprecated function-section">
@@ -26,7 +26,7 @@
               <div class="function-section">
                 <h3>Parameters</h3>
                 <% function[:params].each do |param| %>
-                  <p class="function-parameter"> <%= param[:name] %> </p>
+                  <p class="function-parameter"> <%= param[:name] %> (<%= param[:type] %>) </p>
                   <p class="function-parameter-description"> <%= param[:description] %></p>
                 <% end %>
               </div>
