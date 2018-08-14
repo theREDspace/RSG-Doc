@@ -98,6 +98,7 @@ module RSGDoc
               potentialPath = File.join(@ROOT_DIR, tempPathArr.join("/"), scriptExtension)
               packagePath = tempPathArr.join("/") if File.exist? potentialPath
               tempPathArr.pop
+              break if tempPathArr.length <= 0
             end
           end
           next
@@ -269,7 +270,7 @@ module RSGDoc
           line_num += 1
           break
         end
-        full_comment = /('|(?i:rem))\s*(?<comment>\w.*$)/.match(comments[line_num])
+        full_comment = /('|(?i:rem))\s*(?<comment>.*$)/.match(comments[line_num])
         if not full_comment
           warn "Bad comment in file #{@ref_brs_script}"
           return
