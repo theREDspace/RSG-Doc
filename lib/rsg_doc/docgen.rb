@@ -47,9 +47,30 @@ module RSGDoc
         @styleFile = File.join(@doc_dir, "defaultStyling.css")
         FileUtils.copy(File.join(File.dirname(__FILE__), "docgenTemplates", "defaultStyling.css"), @styleFile)
 
+        paths = []
         xmlFiles.each do |file|
+          paths.push [File.join(
+                @doc_dir,
+                File.dirname(file).split(@ROOT_DIR)[1],
+                File.basename(file)
+            ) << ".html", File.basename(file)]
           parsexml(file)
         end
+
+        index_file = File.open(
+          File.join(
+              @doc_dir,
+              "index.html"
+          ),"w",0755)
+  
+        paths.sort!{|x,y| x[1] <=> y[1]}
+        # The binding here is the current context
+        template = ERB.new(File.read(File.join(File.dirname(__FILE__), "docgenTemplates", "docgen.index.html.erb")))
+
+        stylePath = "defaultStyling.css"
+
+        index_file.write(template.result(binding))
+        index_file.close
 
       else
         warn("No xml files found")
@@ -146,17 +167,18 @@ module RSGDoc
         # Check if documentation was already produced for a particular file
         documentationPath = File.join(@doc_dir, script.split(@ROOT_DIR)[1])
 
-        xml_html_content[:brsfiles].push({
-          :path => documentationPath,
-          :name => File.basename(script)
-        })
-
         if File.exist? documentationPath + ".html"
           # warn(".brs file already documented: "+ documentationPath)
           next
         end
 
         brs_doc_contents = parsebrs( script, filename )
+
+        xml_html_content[:brsfiles].push({
+          :path => documentationPath,
+          :name => File.basename(script),
+          :content => brs_doc_contents
+        })
 
         # Pair up the functional field with the corresponding script
         xml_html_content[:functionalfields].each do |function|
@@ -165,7 +187,9 @@ module RSGDoc
           else
             brs_doc_contents[:content][:functions].each do |brsfunction|
               if brsfunction[:functionname] == function[:name]
-                function.merge!(:file => brs_doc_contents[:file])
+                function.merge!(
+                  :file => brs_doc_contents[:file],
+                  :filename => File.basename(brs_doc_contents[:file]))
               end
             end
           end
@@ -247,13 +271,7 @@ module RSGDoc
         # Checks if directories are in place and adds them if they are not
         FileUtils.mkdir_p File.dirname(brs_doc_loc), :mode => 0755
 
-        # Create the documentation
-        brs_file = File.open(brs_doc_loc, "w", 0755)
-
-        # The binding here is the current context
-        brs_file.write( template.result(binding) )
-        brs_file.close
-        return {:content => brs_doc_content, :file => brs_doc_loc, :ref => script }
+        return {:content => brs_doc_content, :file => brs_doc_loc, :ref => script, :html => template.result(binding) }
       end
     end
 
@@ -279,21 +297,36 @@ module RSGDoc
         end
         line_num += 1
       end
+      isParamBlock = false
+      paramPath = []
       brs_html_content[:params] = Array.new
+      brs_html_content[:public] = false
       # Parse the block tags if present
       while line_num < comments.length - 1
         # Look for deprecated tag
         dep_match = /'\s*@deprecated\s*(?<description>.*$)/.match(comments[line_num])
         if dep_match
+          isParamBlock = false
           brs_html_content[:deprecated] = parseDescription(dep_match['description'])
           line_num += 1
           next
         end
+        # Look for public tag
+        dep_match = /'\s*@public/.match(comments[line_num])
+        if dep_match
+          isParamBlock = false
+          brs_html_content[:public] = true
+          line_num += 1
+          next
+        end
         # Look for param tag
-        param_match = /'\s*@param\s*(?<name>\w*)\s*(?<description>\w.*)?/.match(comments[line_num])
+        param_match = /'\s*@param\s*(?<type>{[\w.]*})?\s*(?<name>[\w.]*),?\s*(?<description>\w.*)?/.match(comments[line_num])
         if param_match
+          isParamBlock = true
+          paramPath = [param_match['name']]
           brs_html_content[:params].push({
-            :name => param_match['name'],
+            :name => param_match['name'].split("."),
+            :type => param_match['type'],
             :description => parseDescription(param_match['description'])
           })
           line_num += 1
@@ -302,6 +335,7 @@ module RSGDoc
         # Look for since tags
         since_match = /'\s*@since\s*(?<description>\w.*)/.match(comments[line_num])
         if since_match
+          isParamBlock = false
           brs_html_content[:since] = parseDescription(since_match['description'])
           line_num += 1
           next
@@ -309,10 +343,37 @@ module RSGDoc
         # Look for return tags
         return_match = /'\s*@return\s*(?<description>\w.*$)/.match(comments[line_num])
         if return_match
+          isParamBlock = false
           brs_html_content[:return] = parseDescription(return_match['description'])
           line_num += 1
           next
         end
+
+        if isParamBlock === true
+          param_match = /'\s*(?<type>{[\w:]*})?\s*(?<name>[\w.]*),?\s*(?<description>\w.*)?/.match(comments[line_num])
+          if param_match
+            curParamPath = param_match['name'].split(".")
+
+            insertedAt = -1
+            for i in 0..paramPath.length
+              curIndex = paramPath.length - 1 - i
+
+              if paramPath[curIndex] === curParamPath[0]
+                paramPath[curIndex+1] = curParamPath[curParamPath.length-1]
+                insertedAt = curIndex+1
+                break
+              end
+            end
+            paramPath.slice!(insertedAt + 1, paramPath.length - insertedAt - 1)
+            brs_html_content[:params].push({
+              :name => paramPath.map(&:clone),
+              :type => param_match['type'],
+              :description => parseDescription(param_match['description'])
+            })
+            line_num += 1
+            next
+          end
+        end 
         line_num += 1
       end
       # Get the function details (name for now)
