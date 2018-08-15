@@ -4,6 +4,7 @@
     <link rel="stylesheet" href="<%= stylePath %>">
   </head>
   <body>
+    <div>
     <h1 class="title"><%= xml_html_content[:componentName] %></h1>
     <% if xml_html_content[:componentExtendedClass] %>
       <h2 class="title">Extends: <%= xml_html_content[:componentExtendedClass] %></h2>
@@ -41,12 +42,15 @@
         </div>
       </div>
     <% end %>
+    </div>
 
     <% if xml_html_content[:brsfiles].length > 0 %>
+      <div>
       <% xml_html_content[:brsfiles].each do |brsfile| %>
         <div id="<%= brsfile[:name] %>"></div>
         <%= brsfile[:content][:html] %>
       <% end %>
+      </div>
     <% end %>
   </body>
 </html>
