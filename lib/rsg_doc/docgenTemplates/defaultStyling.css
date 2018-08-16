@@ -22,6 +22,15 @@ a:visited {
   color: rgb(220, 20, 60);
 }
 
+.main_div {
+  height: -moz-available;          /* WebKit-based browsers will ignore this. */
+  height: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+  height: fill-available;
+  display: flex; 
+  align-items: stretch;
+  align-content: stretch;
+}
+
 .title{
   padding-left: 25px;
 }

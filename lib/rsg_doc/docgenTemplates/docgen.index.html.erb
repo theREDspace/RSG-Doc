@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="<%= stylePath %>">
   </head>
   <body>
-    <div style="display: flex; align-items: stretch; align-content: stretch">
+    <div class="main_div">
       <div style="flex: 0 0 20%; padding: 10px;">
         <% paths.each do |fileInfo| %>
           <a target="viewer" href="<%= fileInfo[0] %>"><%= fileInfo[1] %></a><br>
