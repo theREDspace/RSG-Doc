@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="stylesheet" href="<%= stylePath %>" ></link>
+    <link rel="stylesheet" href="<%= stylePath %>">
   </head>
   <body>
+    <div>
     <h1 class="title"><%= xml_html_content[:componentName] %></h1>
     <% if xml_html_content[:componentExtendedClass] %>
       <h2 class="title">Extends: <%= xml_html_content[:componentExtendedClass] %></h2>
@@ -14,7 +15,7 @@
         <h2 class="section-title">Associated Brightscript</h2>
         <div class="function-section">
           <% xml_html_content[:brsfiles].each do |brsfile| %>
-            <h3><a href="<%= brsfile[:path] %>.html"><%= brsfile[:name] %></a></h3>
+            <h3><a href="#<%= brsfile[:name] %>"><%= brsfile[:name] %></a></h3>
           <%end %>
         </div>
       </div>
@@ -36,9 +37,19 @@
       <h2 class="section-title">Functional Fields</h2>
         <div class="function-section">
           <% xml_html_content[:functionalfields].each do |functionalfield| %>
-            <h3><a href="<%= functionalfield[:file]%>#<%=functionalfield[:name]%>"><%= functionalfield[:name] %></a></h3>
+            <h3><a href="#<%= functionalfield[:filename]%>.<%=functionalfield[:name]%>"><%= functionalfield[:name] %></a></h3>
           <% end %>
         </div>
+      </div>
+    <% end %>
+    </div>
+
+    <% if xml_html_content[:brsfiles].length > 0 %>
+      <div>
+      <% xml_html_content[:brsfiles].each do |brsfile| %>
+        <div id="<%= brsfile[:name] %>"></div>
+        <%= brsfile[:content][:html] %>
+      <% end %>
       </div>
     <% end %>
   </body>

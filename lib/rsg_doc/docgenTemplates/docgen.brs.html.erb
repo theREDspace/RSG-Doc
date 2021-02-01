@@ -1,51 +1,50 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <link rel="stylesheet" href="<%= stylePath %>" ></link>
-  </head>
-  <body>
-    <h1 class="title"> <%= brs_doc_content[:name] %> </h1>
-    <% if brs_doc_content[:functions].length > 0 %>
-    <div class="section-container">
-      <h2 class="section-title"> Functions </h2>
-        <% brs_doc_content[:functions].each do |function| %>
-          <div class="function-container">
-            <h2 class="function-name" name="<%= function[:functionname] %>"> #<%= function[:functionname] %> </h2>
+<h1 class="title"> <%= brs_doc_content[:name] %> </h1>
+<% if brs_doc_content[:functions].length > 0 %>
+<div class="section-container">
+  <h2 class="section-title"> Functions </h2>
+    <% brs_doc_content[:functions].each do |function| %>
+      <div id="<%= brs_doc_content[:name] %>.html.<%= function[:functionname] %>" class="function-container">
+        <h2 class="function-name" name="<%= function[:functionname] %>"> #<%= function[:functionname] %> </h2>
 
-            <% if function[:deprecated] %>
-              <div class="function-deprecated function-section">
-                <h3>Deprecated</h3>
-                <p><%= function[:deprecated] %></p>
-              </div>
-            <% end %>
-            <div class="function-section">
-              <h3>Description</h3>
-              <p> <%= function[:description].join(" ") %> </p>
-            </div>
-            <% if function[:params].length > 0 %>
-              <div class="function-section">
-                <h3>Parameters</h3>
-                <% function[:params].each do |param| %>
-                  <p class="function-parameter"> <%= param[:name] %> </p>
-                  <p class="function-parameter-description"> <%= param[:description] %></p>
-                <% end %>
-              </div>
-            <% end %>
-            <% if function[:return] %>
-              <div class="function-section">
-                <h3>Return Value</h3>
-                <p> <%= function[:return] %> </p>
-              </div>
-            <% end %>
-            <% if function[:since] %>
-              <div class="function-section">
-                <h3>Last Updated</h3>
-                <p>Version <%= function[:since] %></p>
+        <% if function[:deprecated] %>
+          <div class="function-deprecated function-section">
+            <h3>Deprecated</h3>
+            <p><%= function[:deprecated] %></p>
+          </div>
+        <% end %>
+        <% if function[:public] %>
+          <div class="function-public function-section">
+            <h3>Public Function</h3>
+          </div>
+        <% end %>
+        <div class="function-section">
+          <h3>Description</h3>
+          <p> <%= function[:description].join(" ") %> </p>
+        </div>
+        <% if function[:params].length > 0 %>
+          <div class="function-section">
+            <h3>Parameters</h3>
+            <% function[:params].each do |param| %>
+              <div style="margin-left: <%= 50 * (param[:name].length-1) %>px;">
+                <p class="function-parameter"> <%= param[:name].last %> <%= param[:type] %> </p>
+                <p class="function-parameter-description"> <%= param[:description] %></p>
               </div>
             <% end %>
           </div>
         <% end %>
-      <% end %>
-    </div>
-  </body>
-</html>
+        <% if function[:return] %>
+          <div class="function-section">
+            <h3>Return Value</h3>
+            <p> <%= function[:return] %> </p>
+          </div>
+        <% end %>
+        <% if function[:since] %>
+          <div class="function-section">
+            <h3>Last Updated</h3>
+            <p>Version <%= function[:since] %></p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+</div>
